@@ -299,6 +299,62 @@ def fill_invoice(pw_ctx, page, inv, tag):
     return dialogs
 
 
+def reset_form(page):
+    """다음 건을 채우기 전에 화면을 비운다."""
+    if "UTEETBAA01" not in (page.url or ""):
+        return
+    page.locator(F["btn_init"]).click()
+    page.wait_for_timeout(1500)
+    for label in ("확인", "예"):
+        b = page.locator(f".w2popup_window input[type=button][value='{label}']")
+        vis = [i for i in range(b.count()) if b.nth(i).is_visible()]
+        if vis:
+            b.nth(vis[-1]).click()
+            break
+
+
+def cmd_all(a):
+    """목록에 있는 건을 차례로 발행한다. 한 건이라도 막히면 거기서 멈춘다."""
+    import securitycard
+
+    data = json.loads(Path(a.file).read_text(encoding="utf-8"))
+    print(f"{len(data)}건을 차례로 발행합니다.")
+    done, failed = [], []
+    with sync_playwright() as pw:
+        _, ctx, page = connect(pw)
+        for i, inv in enumerate(data):
+            tag = f"{i:02d}_{str(inv.get('공급받는자_상호', ''))[:6]}"
+            try:
+                reset_form(page)
+                log(f"[{tag}] 채우기 시작: {inv['공급받는자_상호']} "
+                    f"공급가액 {int(inv['공급가액']):,} 세액 {int(inv['세액']):,}")
+                fill_invoice(ctx, page, inv, tag)
+                got = sign_and_wait(ctx, page, tag, use_card=a.card)
+                if got:
+                    done.append((inv["공급받는자_상호"], got))
+                    print(f"  {i+1}/{len(data)} 발급 완료 {inv['공급받는자_상호']} 승인번호 {got}")
+                else:
+                    failed.append((inv["공급받는자_상호"], "승인번호를 못 받음"))
+                    print(f"  {i+1}/{len(data)} 실패 {inv['공급받는자_상호']}")
+                    break
+            except securitycard.CardBlocked as e:
+                failed.append((inv.get("공급받는자_상호"), str(e)[:120]))
+                print("보안카드 인증이 거절돼 남은 건까지 모두 멈춥니다.")
+                print(e)
+                break
+            except Exception as e:  # noqa
+                failed.append((inv.get("공급받는자_상호"), str(e)[:120]))
+                log(f"[{tag}] 오류: {e}")
+                print(f"  {i+1}/{len(data)} 오류 {inv.get('공급받는자_상호')}: {str(e)[:100]}")
+                break
+
+    print(f"\n끝났습니다. 발급 {len(done)}건, 못 한 것 {len(data) - len(done)}건.")
+    for name, got in done:
+        print(f"  발급 {name} {got}")
+    for name, why in failed:
+        print(f"  실패 {name} {why}")
+
+
 def cmd_fill(a):
     data = json.loads(Path(a.file).read_text(encoding="utf-8"))
     inv = data[a.index]
@@ -346,6 +402,9 @@ if __name__ == "__main__":
     s.add_argument("--preview", action="store_true"); s.add_argument("--issue", action="store_true")
     s.add_argument("--card", action="store_true", help="보안카드로 서명(없으면 인증서 창을 띄우고 사람이 입력)")
     s.add_argument("--wait-min", type=int, default=10); s.set_defaults(fn=cmd_fill)
+    s = sp.add_parser("all", help="목록에 있는 건을 차례로 전부 발행")
+    s.add_argument("file"); s.add_argument("--card", action="store_true")
+    s.set_defaults(fn=cmd_all)
     s = sp.add_parser("reset"); s.set_defaults(fn=cmd_reset)
     a = ap.parse_args()
     a.fn(a)

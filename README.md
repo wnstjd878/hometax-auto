@@ -98,6 +98,12 @@ python issue.py fill invoices.json --index 0 --issue --card
 
 `--card` 를 빼면 인증서 창을 띄우고 비밀번호는 사람이 칩니다.
 
+여러 건이면 한 번에 돌립니다. 목록에 적은 순서대로 발행하고, 한 건이라도 막히면 거기서 멈춥니다.
+
+```bash
+python issue.py all invoices.json --card
+```
+
 **8. 잘못 발행했으면 취소합니다.**
 
 ```bash
