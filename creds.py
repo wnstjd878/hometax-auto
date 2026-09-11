@@ -84,6 +84,19 @@ def has_rrn() -> bool:
     return bool(saved.get("rrn_front")) and bool(saved.get("rrn_back1"))
 
 
+def telegram() -> tuple[str, int]:
+    """텔레그램 봇 열쇠와 받을 대화방 번호. 봇을 안 쓰면 필요 없다."""
+    saved = _load()
+    token = saved.get("telegram_token", "")
+    chat = saved.get("telegram_chat_id", 0)
+    if not token or not chat:
+        raise MissingCredentials(
+            "텔레그램 봇 열쇠나 대화방 번호가 저장돼 있지 않습니다. "
+            "`python setup_creds.py telegram` 을 실행하세요."
+        )
+    return token, int(chat)
+
+
 def card_serial() -> str:
     got = _load().get("card_serial", "")
     if not got:

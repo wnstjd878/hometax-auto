@@ -153,6 +153,46 @@ def ask_rrn(data: dict) -> None:
             print("숫자 하나여야 해서 저장하지 않았습니다.")
 
 
+def ask_telegram(data: dict) -> None:
+    # style-guard:off — 화면에 그대로 뜨는 안내 문구
+    print("\n[텔레그램 봇]")
+    print("폰에서 발행을 시키고 싶을 때만 넣으면 됩니다. 안 쓰면 건너뛰세요.")
+    print("1) 텔레그램에서 @BotFather 를 찾아 /newbot 을 보내고 봇을 하나 만듭니다.")
+    print("2) 받은 열쇠를 아래에 넣습니다. 화면에 안 보입니다.")
+    token = getpass.getpass("봇 열쇠(그대로 두려면 Enter): ").strip()
+    if token:
+        data["telegram_token"] = token
+    print("3) 그 봇과 대화를 한 번 시작하고 아무 말이나 보냅니다.")
+    print("4) 아래에 Enter 만 누르면 대화방 번호를 알아서 찾아옵니다.")
+    chat = input("대화방 번호(모르면 Enter): ").strip()
+    if chat:
+        data["telegram_chat_id"] = int(chat)
+        return
+    tok = data.get("telegram_token", "")
+    if not tok:
+        print("봇 열쇠가 없어 대화방 번호를 못 찾습니다.")
+        return
+    try:
+        import json as _json
+        import urllib.request
+        with urllib.request.urlopen(
+                f"https://api.telegram.org/bot{tok}/getUpdates", timeout=15) as r:
+            got = _json.loads(r.read())
+        ids = []
+        for u in got.get("result", []):
+            m = u.get("message") or u.get("edited_message") or {}
+            cid = (m.get("chat") or {}).get("id")
+            if cid and cid not in ids:
+                ids.append(cid)
+        if not ids:
+            print("아직 받은 메시지가 없습니다. 봇에게 아무 말이나 보내고 다시 실행하세요.")
+            return
+        data["telegram_chat_id"] = int(ids[-1])
+        print(f"대화방 번호를 찾았습니다: {ids[-1]}")
+    except Exception as e:
+        print("대화방 번호를 못 찾았습니다:", str(e)[:120])
+
+
 def main() -> None:
     what = (sys.argv[1] if len(sys.argv) > 1 else "all").lower()
     if what == "status":
@@ -164,6 +204,8 @@ def main() -> None:
         ask_login(data)
     if what == "rrn":
         ask_rrn(data)
+    if what == "telegram":
+        ask_telegram(data)
     if what in ("all", "card"):
         ask_card(data)
     save(data)
