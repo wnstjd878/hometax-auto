@@ -1,0 +1,12 @@
+shots/*
+!shots/.gitkeep
+logs/*
+!logs/.gitkeep
+__pycache__/
+*.pyc
+.env
+credentials.json
+.hometax/
+invoices_*.json
+!invoices.sample.json
+queue/
