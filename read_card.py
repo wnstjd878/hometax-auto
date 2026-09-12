@@ -30,6 +30,11 @@ BASE = Path(__file__).resolve().parent
 
 def run_ocr(image: Path) -> list[str]:
     """윈도우에 들어 있는 글자 인식으로 사진을 읽는다. 인터넷을 쓰지 않는다."""
+    if sys.platform != "win32":
+        raise RuntimeError(
+            "사진으로 읽는 기능은 윈도우에 들어 있는 글자 인식을 씁니다.\n"
+            "맥이나 리눅스에서는 `python setup_creds.py card` 로 직접 넣어 주십시오."
+        )
     try:
         import winocr
         from PIL import Image

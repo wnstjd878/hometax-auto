@@ -20,19 +20,23 @@
 
 1. **전자세금계산서 발급용 보안카드.** 가까운 세무서에서 무료로 받습니다. 개인사업자는 대표자 신분증만 있으면 되고, 법인은 3개월 안에 뗀 법인 인감증명서를 함께 가져갑니다. 온라인 신청은 없습니다. 신청한 날 바로는 못 쓰고 다음날 오후부터 열립니다. 그래서 이것부터 해야 합니다.
 2. **홈택스 아이디와 비밀번호.**
-3. **윈도우 PC와 크롬.** 창을 띄운 채로 돌기 때문에 화면이 켜져 있어야 합니다.
+3. **윈도우 PC 또는 맥과 크롬.** 창을 띄운 채로 돌기 때문에 화면이 켜져 있어야 합니다.
 4. **파이썬 3.10 이상.**
 
 ## 설치
 
+윈도우는 PowerShell, 맥은 터미널을 엽니다.
+
 ```bash
-git clone https://github.com/<당신의 계정>/hometax-auto.git
+git clone https://github.com/wnstjd878/hometax-auto.git
 cd hometax-auto
 pip install playwright
 playwright install chromium
 ```
 
-보안카드를 사진으로 읽고 싶으면 이것도 설치합니다. 인터넷을 쓰지 않고 윈도우에 들어 있는 글자 인식을 부릅니다.
+맥에서 `pip` 나 `python` 을 못 찾는다면 `pip3`, `python3` 으로 바꿔 치면 됩니다. 아래 예시는 전부 `python` 으로 적었습니다.
+
+보안카드를 사진으로 읽고 싶으면 이것도 설치합니다. 인터넷을 쓰지 않고 윈도우에 들어 있는 글자 인식을 부르며, **이 기능은 윈도우에서만 됩니다.** 맥에서는 카드를 직접 입력합니다.
 
 ```bash
 pip install winocr winrt-runtime winrt-Windows.Media.Ocr winrt-Windows.Globalization winrt-Windows.Storage.Streams winrt-Windows.Graphics.Imaging winrt-Windows.Foundation
@@ -58,9 +62,11 @@ python setup_creds.py card
 
 카드 사진으로 넣고 싶으면 이렇게 합니다. 사진은 이 PC 밖으로 나가지 않습니다.
 
-```bash
+```powershell
 python read_card.py "C:\경로\카드사진.jpg"
 ```
+
+맥에서는 이 명령이 막히고 직접 입력하라는 안내가 나옵니다.
 
 읽은 숫자를 번호별로 보여주니 실물과 대조하고 저장하세요. 카드에 따라 왼쪽 번호가 인식되지 않을 수 있는데, 그때는 직접 넣는 편이 빠릅니다.
 
@@ -72,9 +78,20 @@ python setup_creds.py status
 
 **4. 크롬을 띄웁니다.** 이 도구 전용 크롬이고 평소 쓰는 크롬과 분리됩니다.
 
+윈도우 PowerShell
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File launch_chrome.ps1
 ```
+
+맥 터미널
+
+```bash
+chmod +x launch_chrome.sh
+./launch_chrome.sh
+```
+
+둘 다 조종 포트 9260 에 전용 크롬을 띄웁니다. 이미 떠 있으면 그대로 씁니다.
 
 **5. 발행할 내용을 적습니다.** `invoices.sample.json` 을 복사해 `invoices.json` 으로 만들고 고칩니다.
 
@@ -155,7 +172,7 @@ python cancel.py 20260101-10260101-12345678
 
 **세금계산서는 발행하면 되돌리기 어렵습니다.** 취소하려면 수정세금계산서를 또 발행해야 하고, 상대에게 메일이 두 번 갑니다. 처음 시험할 때는 반드시 본인 소유의 다른 사업자에게 1,000원 같은 소액으로 하세요.
 
-**자격 파일은 `%USERPROFILE%\.hometax\credentials.json` 에 있습니다.** 본인 계정만 열 수 있게 권한을 잠그지만, 이 PC가 뚫리면 카드도 같이 뚫립니다. 그 파일을 다른 곳에 복사하거나 메신저로 보내지 마세요. 이 저장소에는 올라가지 않습니다.
+**자격 파일은 윈도우 `%USERPROFILE%\.hometax\credentials.json`, 맥 `~/.hometax/credentials.json` 에 있습니다.** 본인 계정만 열 수 있게 권한을 잠그지만, 이 PC가 뚫리면 카드도 같이 뚫립니다. 그 파일을 다른 곳에 복사하거나 메신저로 보내지 마세요. 이 저장소에는 올라가지 않습니다.
 
 ## 화면 구조에서 걸리기 쉬운 곳
 
@@ -171,7 +188,8 @@ python cancel.py 20260101-10260101-12345678
 
 | 파일 | 하는 일 |
 |---|---|
-| `launch_chrome.ps1` | 전용 크롬을 띄운다 |
+| `launch_chrome.ps1` | 전용 크롬을 띄운다 (윈도우) |
+| `launch_chrome.sh` | 전용 크롬을 띄운다 (맥·리눅스) |
 | `ht.py` | 화면 캡처와 요소 조사 |
 | `creds.py` / `setup_creds.py` | 자격 읽기와 저장 |
 | `read_card.py` | 보안카드 사진 읽기 |

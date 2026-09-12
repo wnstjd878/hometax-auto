@@ -33,13 +33,22 @@ def load_existing() -> dict:
     return {}
 
 
+def lock_file() -> None:
+    """자격 파일을 본인만 열 수 있게 잠근다. 윈도우와 맥이 방법이 다르다."""
+    if sys.platform == "win32":
+        user = os.environ.get("USERNAME", "")
+        if user:
+            subprocess.run(["icacls", str(CRED_FILE), "/inheritance:r", "/grant:r", f"{user}:F"],
+                           capture_output=True, text=True)
+    else:
+        CRED_FILE.chmod(0o600)
+        CRED_DIR.chmod(0o700)
+
+
 def save(data: dict) -> None:
     CRED_DIR.mkdir(parents=True, exist_ok=True)
     CRED_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    user = os.environ.get("USERNAME", "")
-    if user:
-        subprocess.run(["icacls", str(CRED_FILE), "/inheritance:r", "/grant:r", f"{user}:F"],
-                       capture_output=True, text=True)
+    lock_file()
     print(f"\n저장했습니다: {CRED_FILE}")
     print("이 파일은 본인 계정만 열 수 있게 권한을 제한했습니다. 다른 곳에 복사하지 마세요.")
 
