@@ -2,10 +2,10 @@
 style-guard:off  (코드 저장소 도구 — CLAUDE.md 12절 비적용 범위)
 
 == 운영 맥락 ==
-용도: 사업자등록증 사진에서 상호·사업자번호·대표자를 읽는다. 거래처 이메일은 한 번 받아 두고 다음부터 다시 묻지 않는다.
+용도: 사업자등록증 사진이나 PDF 에서 상호·사업자번호·대표자를 읽는다. 거래처 이메일은 한 번 받아 두고 다음부터 다시 묻지 않는다.
 실행 시점: telegram_bot.py 가 사진을 받을 때, 또는 사람이 `python bizreg.py 사진경로` 로 확인할 때.
 입력: 사업자등록증 사진(jpg/png). 출력: 읽은 항목 dict. 거래처 장부는 %USERPROFILE%\\.hometax\\partners.json
-외부 의존: 읽는 순서는 (1) 이 PC 에 설치된 claude 명령 (2) 윈도우에 들어 있는 글자 인식(winocr).
+외부 의존: 읽는 순서는 (1) 이 PC 에 설치된 claude 명령(PDF 도 읽는다) (2) 윈도우에 들어 있는 글자 인식(winocr, 사진만).
           둘 다 사진을 이 컴퓨터 안에서만 읽는다.
 의도적 미구현: 사진을 바깥 인식 서비스로 올려 읽기. 거래처 서류가 밖으로 나가므로 금지.
               사업자번호 진위 확인. 홈택스 발급 화면의 [확인] 단추가 이미 걸러 준다.
@@ -106,7 +106,7 @@ def _by_windows_ocr(image: Path) -> dict | None:
         return bool(re.fullmatch(r"[가-힣]{2,5}", t)) and t not in ("법인명", "단체명", "상호", "성명", "대표자")
 
     for line in lines[hit + 1:hit + 6]:
-        t = re.sub(r"\s+", " ", line).strip()
+        t = re.sub(r"\s+", " ", line).strip(" :：.,")
         if not out["company"] and len(t) >= 3 and not looks_like_name(t):
             out["company"] = t
         elif not out["owner"] and looks_like_name(t):

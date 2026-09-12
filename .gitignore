@@ -7,6 +7,8 @@ __pycache__/
 .env
 credentials.json
 .hometax/
+invoices.json
 invoices_*.json
+partners.json
 !invoices.sample.json
 queue/

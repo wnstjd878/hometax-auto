@@ -38,7 +38,7 @@ log = logging.getLogger("봇")
 
 HELP = """세금계산서 봇입니다. 사업자등록증 사진을 보내는 것이 가장 빠릅니다.
 
-사진          사업자등록증을 읽어 공급가액을 묻습니다. 금액만 답장하면 목록에 들어갑니다
+사진/PDF      사업자등록증을 읽어 공급가액을 묻습니다. 금액만 답장하면 목록에 들어갑니다
 목록          지금 발행할 건을 보여줍니다
 추가 상호,사업자번호,대표자,이메일,금액,품목
               사진 없이 글자로 한 건 넣습니다
@@ -263,9 +263,15 @@ def main() -> None:
         msg = update.message
         if not msg or msg.chat_id != chat_id:
             return
-        file_id = msg.photo[-1].file_id if msg.photo else msg.document.file_id
+        if msg.photo:
+            file_id, suffix = msg.photo[-1].file_id, ".jpg"
+        else:
+            file_id = msg.document.file_id
+            suffix = Path(msg.document.file_name or "").suffix.lower() or ".jpg"
+            if suffix not in (".jpg", ".jpeg", ".png", ".pdf"):
+                suffix = ".jpg"
         SHOTS.mkdir(parents=True, exist_ok=True)
-        path = SHOTS / f"{datetime.now():%Y%m%d-%H%M%S}.jpg"
+        path = SHOTS / f"{datetime.now():%Y%m%d-%H%M%S}{suffix}"
         got_file = await context.bot.get_file(file_id)
         await got_file.download_to_drive(custom_path=str(path))
         await msg.reply_text("사업자등록증을 읽고 있습니다. 십 초쯤 걸립니다.")
@@ -325,7 +331,8 @@ def main() -> None:
             await msg.reply_text(HELP)
 
     app = Application.builder().token(token).build()
-    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, on_photo))
+    app.add_handler(MessageHandler(
+        filters.PHOTO | filters.Document.IMAGE | filters.Document.PDF, on_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     log.info("봇을 띄웠습니다. 사업자등록증 사진을 보내 보세요. 창을 닫으면 멈춥니다.")
     app.run_polling(drop_pending_updates=True)
