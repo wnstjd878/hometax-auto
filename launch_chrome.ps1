@@ -4,7 +4,12 @@ $profile = Join-Path $env:USERPROFILE ".chrome-hometax"
 New-Item -ItemType Directory -Force $profile | Out-Null
 $listening = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
 if ($listening) { Write-Output "already listening on $port"; exit 0 }
-$chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$chrome = $env:HOMETAX_CHROME
+if (-not $chrome -or -not (Test-Path $chrome)) {
+  $cands = @("C:\Program Files\Google\Chrome\Application\chrome.exe", "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe", (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe"))
+  $chrome = $cands | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+if (-not $chrome) { Write-Output "chrome not found"; exit 2 }
 Start-Process -FilePath $chrome -ArgumentList @(
   "--user-data-dir=$profile",
   "--remote-debugging-port=$port",

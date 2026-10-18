@@ -164,10 +164,19 @@ def remember_partner(bsno: str, **fields) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("쓰는 법: python bizreg.py 사업자등록증사진.jpg")
+    args = [x for x in sys.argv[1:] if x != "--json"]
+    if not args:
+        print("쓰는 법: python bizreg.py 사업자등록증사진.jpg [--json]")
         raise SystemExit(1)
-    got = read_bizreg(Path(sys.argv[1]))
+    if "--json" in sys.argv:   # 다른 프로그램(AI 오피스)이 읽는 꼴. 실패도 JSON 으로
+        try:
+            got = read_bizreg(Path(args[0]))
+            got["email"] = partner(got["business_no"]).get("email", "")
+            print(json.dumps({"ok": True, **got}, ensure_ascii=False))
+        except Exception as ex:  # noqa
+            print(json.dumps({"ok": False, "error": str(ex)[:300]}, ensure_ascii=False))
+        raise SystemExit(0)
+    got = read_bizreg(Path(args[0]))
     print(f"읽은 방법: {got.pop('source')}")
     for key, label in (("company", "상호"), ("business_no", "등록번호"), ("owner", "대표자")):
         print(f"{label}: {got[key] or '못 읽음'}")

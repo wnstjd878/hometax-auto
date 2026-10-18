@@ -11,13 +11,14 @@
 from __future__ import annotations
 
 import random
+import json
 import sys
 import time
 
 from playwright.sync_api import sync_playwright
 
 import creds
-from ht import connect, shot
+from ht import accept_quiet, click_past_notices, connect, shot
 from issue import log, pause
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -155,21 +156,22 @@ def ensure_login(page, timeout_min=3) -> bool:
         page.goto("https://hometax.go.kr", wait_until="domcontentloaded")
         page.wait_for_timeout(4000)
 
-    # 로그인 상자가 안 보이면 "아이디 로그인" 을 눌러 연다
+    # 첫 화면 공지 팝업(시스템 점검 안내 등)이 늦게 떠 '아이디 로그인' 단추를 덮는다(2026-10-08).
+    # click_past_notices 가 막히면 공지를 닫고 다시 누른다
     if page.locator(ID_BOX).count() == 0 or not page.locator(ID_BOX).first.is_visible():
         try:
-            page.get_by_text("아이디 로그인", exact=True).first.click()
+            click_past_notices(page, page.get_by_text("아이디 로그인", exact=True).first, log)
             page.wait_for_timeout(3000)
         except Exception:
             page.goto("https://hometax.go.kr", wait_until="domcontentloaded")
             page.wait_for_timeout(4000)
-            page.get_by_text("아이디 로그인", exact=True).first.click()
+            click_past_notices(page, page.get_by_text("아이디 로그인", exact=True).first, log)
             page.wait_for_timeout(3000)
 
     page.wait_for_selector(ID_BOX, timeout=15000)
 
     dialogs = []
-    page.on("dialog", lambda d: (dialogs.append(d.message), d.accept()))
+    page.on("dialog", lambda d: (dialogs.append(d.message), accept_quiet(d)))
 
     _type_secret(page, ID_BOX, creds.login_id())
     _type_secret(page, PW_BOX, creds.login_pw())
@@ -211,6 +213,27 @@ def ensure_login(page, timeout_min=3) -> bool:
 
 
 def main():
+    args = sys.argv[1:]
+    if "--check" in args or "--wait" in args:   # AI 오피스용: 자격 없이 로그인 상태만 본다. --wait N 은 사람이 로그인할 때까지 N분 기다린다
+        minutes = 0
+        if "--wait" in args:
+            try:
+                minutes = int(args[args.index("--wait") + 1])
+            except Exception:  # noqa
+                minutes = 10
+        with sync_playwright() as pw:
+            _, ctx, page = connect(pw)
+            deadline = time.time() + minutes * 60
+            while True:
+                ok = False
+                try:
+                    ok = is_logged_in(page)
+                except Exception:  # noqa
+                    ok = False
+                if ok or time.time() >= deadline:
+                    print(json.dumps({"logged_in": bool(ok), "url": (page.url or "")[:120]}, ensure_ascii=False))
+                    return
+                time.sleep(4)
     with sync_playwright() as pw:
         _, ctx, page = connect(pw)
         try:

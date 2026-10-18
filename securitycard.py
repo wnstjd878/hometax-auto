@@ -42,6 +42,11 @@ CARD_BOX2 = "#mf_inputCardNo2"
 CARD_OK = "#mf_btnCfrm"
 
 
+# 확인하기를 누른 인증의 tag. 누른 뒤에 난 오류는 서명이 들어갔는지 알 수 없다.
+# run_queue 가 취소 건을 대기열로 되돌릴지 정할 때 본다(되돌리면 같은 건이 두 번 취소될 수 있다).
+SUBMITTED: set[str] = set()
+
+
 class CardBlocked(RuntimeError):
     """지난 실패가 안 풀린 상태라 사람이 확인하기 전에는 카드를 다시 쓰지 않는다."""
 
@@ -183,6 +188,7 @@ def authenticate(ctx, tag: str) -> None:
         ok.first.click(timeout=8000)
     except Exception:
         card_win.evaluate(f"document.querySelector('{CARD_OK}').click()")
+    SUBMITTED.add(tag)
     log(f"[보안카드][{tag}] 확인하기 눌렀다")
 
     # 창이 닫히면 통과한 것이다
