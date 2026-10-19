@@ -38,9 +38,16 @@ def is_logged_in(page) -> bool:
 
     예전엔 '로그아웃' 글자만 봤는데 로그인 화면에도 그 낱말이 있어 잘못 판정했다(2026-09-11).
     """
-    try:
-        body = page.evaluate("document.body.innerText") or ""
-    except Exception:
+    body = ""
+    for _ in range(3):   # 화면이 넘어가는 순간에는 읽기가 실패하거나 비어 있다. 그때 '로그아웃' 으로 보지 않게 잠깐 기다려 다시 본다(2026-10-19)
+        try:
+            body = page.evaluate("document.body.innerText") or ""
+        except Exception:
+            body = ""
+        if body.strip():
+            break
+        page.wait_for_timeout(1000)
+    if not body.strip():
         return False
     if "회원정보조회" in body:
         return True
