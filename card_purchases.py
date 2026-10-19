@@ -155,10 +155,11 @@ def main() -> None:
                     res["errors"].append("%d-%02d: %s" % (y, m, str(e)[:160])); continue
                 kept = 0
                 for r in rows:
+                    r["ym"] = "%d-%02d" % (y, m)   # 어느 달 조회에서 나온 줄인지(다시 읽을 때 그 달을 통째로 갈아 끼움)
                     k = r["sn"] or (r["d"] + r["merchant"] + str(r["total"]))
                     if k in seen: continue
                     seen.add(k); res["rows"].append(r); kept += 1
-                res["months"].append({"ym": "%d-%02d" % (y, m), "n": kept, "total": total})
+                res["months"].append({"ym": "%d-%02d" % (y, m), "n": kept, "total": total, "ready": total >= 0})
             res["ok"] = True
     except Exception as e:
         res["errors"].append(str(e)[:300])
