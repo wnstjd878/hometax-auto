@@ -240,6 +240,7 @@ python cancel.py 20260101-10260101-12345678
 | `cancel.py` | 전액 취소 |
 | `telegram_bot.py` | 폰에서 시키기(선택) |
 | `bizreg.py` | 사업자등록증 사진·PDF 읽기, 거래처 이메일 장부 |
+| `card_purchases.py` | 사업용 신용카드 사용 내역 읽기(달마다, 읽기만). `python card_purchases.py --from 2026-08 --to 2026-10 --out 결과.json` |
 | `run.bat` | 크롬 띄우기부터 발행까지 한 번에 (윈도우) |
 | `run.command` | 크롬 띄우기부터 발행까지 한 번에 (맥·리눅스) |
 
